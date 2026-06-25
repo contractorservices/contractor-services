@@ -24,3 +24,5 @@ pnpm-debug.log*
 
 # Cloudflare Wrangler local database & cache
 .wrangler/
+
+.dev.vars

@@ -1,6 +1,6 @@
 ---
 // src/pages/index.astro
-import { env } from "cloudflare:workers"; // 👈 Added for Astro v6 Cloudflare native bindings
+import { env } from "cloudflare:workers";
 
 export const prerender = false;
 
@@ -22,16 +22,40 @@ if (Astro.request.method === "POST") {
     if (!formErrors.name && !formErrors.phone && !formErrors.service) {
       submittedData = { name: name!, phone: phone!, service: service! };
 
-      // 1. In Astro v6, we use the imported 'env' directly! No more Astro.locals.runtime
-      await env.roofing_leads_db
-        .prepare("INSERT INTO leads (name, phone, service) VALUES (?, ?, ?)")
+      // 1. Save to Cloudflare D1 Database
+      await env.DB.prepare(
+        "INSERT INTO leads (name, phone, service) VALUES (?, ?, ?)",
+      )
         .bind(submittedData.name, submittedData.phone, submittedData.service)
         .run();
+
+      // 2. INSTANT EMAIL NOTIFICATION 🚀
+      // Triggered immediately after a successful database save
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Roofing Leads <onboarding@resend.dev>",
+          to: ["YOUR_PERSONAL_EMAIL@EMAIL.COM"], // 👈 Put your real email address here
+          subject: `🚨 New Roofing Lead: ${submittedData.name}`,
+          html: `
+            <h2>You received a new lead!</h2>
+            <p><strong>Name:</strong> ${submittedData.name}</p>
+            <p><strong>Phone:</strong> ${submittedData.phone}</p>
+            <p><strong>Service Desired:</strong> ${submittedData.service}</p>
+            <br />
+            <p>Sent instantly from your Cloudflare Worker pipeline.</p>
+          `,
+        }),
+      });
 
       formSubmitted = true;
     }
   } catch (error) {
-    console.error("Database insertion failed:", error);
+    console.error("Submission processing failed:", error);
   }
 }
 ---
