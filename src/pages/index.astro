@@ -23,7 +23,7 @@ if (Astro.request.method === "POST") {
       submittedData = { name: name!, phone: phone!, service: service! };
 
       // 1. Save to Cloudflare D1 Database
-      await env.DB.prepare(
+      await env.roofing_leads_db.prepare(
         "INSERT INTO leads (name, phone, service) VALUES (?, ?, ?)",
       )
         .bind(submittedData.name, submittedData.phone, submittedData.service)
@@ -39,7 +39,7 @@ if (Astro.request.method === "POST") {
         },
         body: JSON.stringify({
           from: "Roofing Leads <onboarding@resend.dev>",
-          to: ["YOUR_PERSONAL_EMAIL@EMAIL.COM"], // 👈 Put your real email address here
+          to: ["contractorservicesagency@gmail.com"], // 👈 Put your real email address here
           subject: `🚨 New Roofing Lead: ${submittedData.name}`,
           html: `
             <h2>You received a new lead!</h2>
