@@ -4,4 +4,5 @@
 
 interface Env {
   RESEND_API_KEY: string;
+  DISCORD_WEBHOOK_URL: string;
 }

@@ -34,12 +34,12 @@ if (Astro.request.method === "POST") {
         headers: {
           Authorization: `Bearer ${env.RESEND_API_KEY}`,
           "Content-Type": "application/json",
-          "User-Agent": "astro-roofing-app/1.0", // 👈 1. Added to clear Resend's security firewall
+          "User-Agent": "astro-roofing-app/1.0",
         },
         body: JSON.stringify({
           from: "Roofing Leads <onboarding@resend.dev>",
-          to: ["contractorservicesagency@gmail.com"], // 👈 2. MUST be the email you used to sign up for Resend!
-          subject: `🚨 New Roofing Lead: ${submittedData.name}`,
+          to: ["contractorservicesagency@gmail.com"],
+          subject: `🚨 New Roofing Lead: ${submittedData.name} (${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })})`,
           html: `
             <h2>You received a new lead!</h2>
             <p><strong>Name:</strong> ${submittedData.name}</p>
@@ -51,7 +51,6 @@ if (Astro.request.method === "POST") {
         }),
       });
 
-      // 👈 3. This block will output the exact error to your terminal if the email fails!
       if (!emailResponse.ok) {
         const errorDetails = await emailResponse.json();
         console.error(
@@ -60,6 +59,51 @@ if (Astro.request.method === "POST") {
         );
       } else {
         console.log("✅ Email notification dispatched successfully!");
+      }
+
+      // 3. DISCORD INSTANT WEBHOOK ALERT 🚀
+      // Drop this right here so it executes alongside the database and email actions
+      try {
+        const discordResponse = await fetch(env.DISCORD_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "Roofing Leads Bot",
+            avatar_url: "https://i.imgur.com/4M34wZ4.png",
+            embeds: [
+              {
+                title: "🚨 New Roofing Lead Captured!",
+                color: 16738304, // Sharp orange hex code color
+                fields: [
+                  { name: "👤 Name", value: submittedData.name, inline: true },
+                  {
+                    name: "📞 Phone",
+                    value: submittedData.phone,
+                    inline: true,
+                  },
+                  {
+                    name: "🛠️ Service Requested",
+                    value: submittedData.service,
+                    inline: false,
+                  },
+                ],
+                footer: { text: "Edge Pipeline Direct Dispatch" },
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          }),
+        });
+
+        if (!discordResponse.ok) {
+          console.error(
+            "❌ Discord Webhook failed:",
+            discordResponse.statusText,
+          );
+        } else {
+          console.log("✅ Discord ping dispatched successfully!");
+        }
+      } catch (discordErr) {
+        console.error("❌ Failed to contact Discord API:", discordErr);
       }
 
       formSubmitted = true;
