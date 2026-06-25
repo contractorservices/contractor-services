@@ -23,23 +23,22 @@ if (Astro.request.method === "POST") {
       submittedData = { name: name!, phone: phone!, service: service! };
 
       // 1. Save to Cloudflare D1 Database
-      await env.roofing_leads_db.prepare(
-        "INSERT INTO leads (name, phone, service) VALUES (?, ?, ?)",
-      )
+      await env.roofing_leads_db
+        .prepare("INSERT INTO leads (name, phone, service) VALUES (?, ?, ?)")
         .bind(submittedData.name, submittedData.phone, submittedData.service)
         .run();
 
       // 2. INSTANT EMAIL NOTIFICATION 🚀
-      // Triggered immediately after a successful database save
-      await fetch("https://api.resend.com/emails", {
+      const emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${env.RESEND_API_KEY}`,
           "Content-Type": "application/json",
+          "User-Agent": "astro-roofing-app/1.0", // 👈 1. Added to clear Resend's security firewall
         },
         body: JSON.stringify({
           from: "Roofing Leads <onboarding@resend.dev>",
-          to: ["contractorservicesagency@gmail.com"], // 👈 Put your real email address here
+          to: ["contractorservicesagency@gmail.com"], // 👈 2. MUST be the email you used to sign up for Resend!
           subject: `🚨 New Roofing Lead: ${submittedData.name}`,
           html: `
             <h2>You received a new lead!</h2>
@@ -51,6 +50,17 @@ if (Astro.request.method === "POST") {
           `,
         }),
       });
+
+      // 👈 3. This block will output the exact error to your terminal if the email fails!
+      if (!emailResponse.ok) {
+        const errorDetails = await emailResponse.json();
+        console.error(
+          "❌ Resend API Error Details:",
+          JSON.stringify(errorDetails),
+        );
+      } else {
+        console.log("✅ Email notification dispatched successfully!");
+      }
 
       formSubmitted = true;
     }
