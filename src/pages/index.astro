@@ -1,12 +1,13 @@
 ---
 // src/pages/index.astro
-export const prerender = false; // Ensures this page runs dynamically on the Worker to handle forms
+import { env } from "cloudflare:workers"; // 👈 Added for Astro v6 Cloudflare native bindings
+
+export const prerender = false;
 
 let formSubmitted = false;
 let formErrors = { name: "", phone: "", service: "" };
 let submittedData = { name: "", phone: "", service: "" };
 
-// Handle the lead capture form submission right here on the Cloudflare Worker
 if (Astro.request.method === "POST") {
   try {
     const data = await Astro.request.formData();
@@ -14,21 +15,23 @@ if (Astro.request.method === "POST") {
     const phone = data.get("phone")?.toString().trim();
     const service = data.get("service")?.toString().trim();
 
-    // Basic validation
     if (!name) formErrors.name = "Please enter your name.";
     if (!phone) formErrors.phone = "Please enter your phone number.";
     if (!service) formErrors.service = "Please select a service.";
 
     if (!formErrors.name && !formErrors.phone && !formErrors.service) {
       submittedData = { name: name!, phone: phone!, service: service! };
-      formSubmitted = true;
 
-      // TODO: This is where you can plug in Cloudflare KV, a D1 Database,
-      // or send a webhook straight to your phone/CRM.
-      console.log("New Roofing Lead Received:", submittedData);
+      // 1. In Astro v6, we use the imported 'env' directly! No more Astro.locals.runtime
+      await env.roofing_leads_db
+        .prepare("INSERT INTO leads (name, phone, service) VALUES (?, ?, ?)")
+        .bind(submittedData.name, submittedData.phone, submittedData.service)
+        .run();
+
+      formSubmitted = true;
     }
   } catch (error) {
-    console.error("Form parsing error:", error);
+    console.error("Database insertion failed:", error);
   }
 }
 ---

@@ -1,24 +1,21 @@
 {
-	"$schema": "./node_modules/wrangler/config-schema.json",
-	"compatibility_date": "2026-06-25",
-	"compatibility_flags": [
-		"global_fetch_strictly_public"
-	],
-	"name": "roofing",
-	"main": "@astrojs/cloudflare/entrypoints/server",
-	"assets": {
-		"directory": "./dist",
-		"binding": "ASSETS",
-	},
-	"observability": {
-		"enabled": true,
-	},
-	"d1_databases": [
-		{
-			"binding": "roofing_leads_db",
-			"database_name": "roofing-leads-db",
-			"database_id": "ed3d3bcb-31ed-45b5-b218-7eff8bd746ad",
-			"remote": true
-		}
-	],
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "compatibility_date": "2026-06-25",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "name": "roofing",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "roofing_leads_db",
+      "database_name": "roofing-leads-db",
+      "database_id": "a0f662dd-fd2e-4a71-b9d6-eb1ad98cfb85",
+    },
+  ],
 }
