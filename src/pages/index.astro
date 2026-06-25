@@ -1,17 +1,319 @@
 ---
+// src/pages/index.astro
+export const prerender = false; // Ensures this page runs dynamically on the Worker to handle forms
 
+let formSubmitted = false;
+let formErrors = { name: "", phone: "", service: "" };
+let submittedData = { name: "", phone: "", service: "" };
+
+// Handle the lead capture form submission right here on the Cloudflare Worker
+if (Astro.request.method === "POST") {
+  try {
+    const data = await Astro.request.formData();
+    const name = data.get("name")?.toString().trim();
+    const phone = data.get("phone")?.toString().trim();
+    const service = data.get("service")?.toString().trim();
+
+    // Basic validation
+    if (!name) formErrors.name = "Please enter your name.";
+    if (!phone) formErrors.phone = "Please enter your phone number.";
+    if (!service) formErrors.service = "Please select a service.";
+
+    if (!formErrors.name && !formErrors.phone && !formErrors.service) {
+      submittedData = { name: name!, phone: phone!, service: service! };
+      formSubmitted = true;
+
+      // TODO: This is where you can plug in Cloudflare KV, a D1 Database,
+      // or send a webhook straight to your phone/CRM.
+      console.log("New Roofing Lead Received:", submittedData);
+    }
+  } catch (error) {
+    console.error("Form parsing error:", error);
+  }
+}
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expert Roofing Services | Free Estimates & Inspections</title>
+    <meta
+      name="description"
+      content="Local trusted roofing contractors. Residential & commercial roof repair, replacements, and storm damage inspection."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #e65100;
+        --primary-hover: #bf4300;
+        --dark: #1e293b;
+        --light: #f8fafc;
+        --text: #334155;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        color: var(--text);
+        background: var(--light);
+        line-height: 1.5;
+      }
+
+      /* Navigation Bar */
+      header {
+        background: white;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        sticky: top;
+      }
+      .logo {
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: var(--dark);
+      }
+      .logo span {
+        color: var(--primary);
+      }
+      .phone-link {
+        color: var(--primary);
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 1.1rem;
+      }
+
+      /* Hero Section */
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+        align-items: center;
+      }
+      @media (min-width: 768px) {
+        .hero {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .hero-text h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--dark);
+        line-height: 1.2;
+        margin-bottom: 1rem;
+      }
+      .hero-text p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+
+      .features {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: var(--dark);
+      }
+      .feature-item span {
+        color: var(--primary);
+        font-size: 1.25rem;
+      }
+
+      /* Form Box */
+      .form-container {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        border-top: 5px solid var(--primary);
+      }
+      .form-container h2 {
+        font-size: 1.5rem;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+      }
+      .form-container p {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.25rem;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 1rem;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: 2px solid var(--primary);
+        border-color: transparent;
+      }
+
+      .error-msg {
+        color: #dc2626;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+      }
+
+      .submit-btn {
+        width: 100%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .submit-btn:hover {
+        background: var(--primary-hover);
+      }
+
+      .success-box {
+        text-align: center;
+        padding: 2rem 0;
+      }
+      .success-box h3 {
+        color: #16a34a;
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">Roof<span>Force</span></div>
+      <a href="tel:5551234567" class="phone-link">📞 (555) 123-4567</a>
+    </header>
+
+    <main class="hero">
+      <div class="hero-text">
+        <h1>Need a Reliable Roof Repair or Replacement?</h1>
+        <p>
+          Protect your home with premium craftsmanship from your local roofing
+          experts. Licensed, insured, and ready to secure your property today.
+        </p>
+
+        <div class="features">
+          <div class="feature-item">
+            <span>✓</span> Free Comprehensive Roof Inspections
+          </div>
+          <div class="feature-item">
+            <span>✓</span> Storm Damage & Insurance Claim Assistance
+          </div>
+          <div class="feature-item">
+            <span>✓</span> 100% Leak-Free Craftsmanship Guarantee
+          </div>
+        </div>
+      </div>
+
+      <div class="form-container">
+        {
+          formSubmitted ? (
+            <div class="success-box">
+              <h3>Thank You, {submittedData.name}!</h3>
+              <p>
+                Our roofing specialist has received your request for{" "}
+                <strong>{submittedData.service}</strong>.
+              </p>
+              <p style="margin-top: 1rem; font-weight: 600;">
+                We will call you at {submittedData.phone} within 15 minutes.
+              </p>
+            </div>
+          ) : (
+            <form method="POST">
+              <h2>Get Your Free Estimate</h2>
+              <p>
+                Fill out the quick form below and secure your consultation spot.
+              </p>
+
+              <div class="form-group">
+                <label for="name">Full Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="John Doe"
+                  value={
+                    Astro.request.method === "POST" ? submittedData.name : ""
+                  }
+                />
+                {formErrors.name && (
+                  <div class="error-msg">{formErrors.name}</div>
+                )}
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  placeholder="(555) 000-0000"
+                />
+                {formErrors.phone && (
+                  <div class="error-msg">{formErrors.phone}</div>
+                )}
+              </div>
+
+              <div class="form-group">
+                <label for="service">Required Service</label>
+                <select id="service" name="service">
+                  <option value="">Select a service...</option>
+                  <option value="Full Roof Replacement">
+                    Full Roof Replacement
+                  </option>
+                  <option value="Roof Leak Repair">Roof Leak Repair</option>
+                  <option value="Storm Damage Inspection">
+                    Storm Damage Inspection
+                  </option>
+                  <option value="Commercial Roofing">Commercial Roofing</option>
+                </select>
+                {formErrors.service && (
+                  <div class="error-msg">{formErrors.service}</div>
+                )}
+              </div>
+
+              <button type="submit" class="submit-btn">
+                Secure Free Inspection →
+              </button>
+            </form>
+          )
+        }
+      </div>
+    </main>
+  </body>
 </html>
